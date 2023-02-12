@@ -3,6 +3,8 @@
 var k = 29;
 var m = 6;
 
+var eps = Math.Pow(10, -4);
+
 var matrix = new double[,]
 {
     {12 + k, 2, m/4, 1, 2},
@@ -11,6 +13,12 @@ var matrix = new double[,]
     {1, 2/m, 4, 33+k, 4},
     {-1, 2, -3, 3+m, -44-k}
 };
+
+var result3 = new double[]
+{
+    1, 2, 3, 4, 5
+};
+
 var matrix2 = new double[,]
 {
     {-4, 1, 1},
@@ -33,4 +41,7 @@ var result1 = new double[]
 {
     -6, 3
 };
-var x = LinearSystemSolver.KhaletskyMethod(matrix3, result1);
+var x = LinearSystemSolver.SeidelMethod(matrix, result3);
+var y = LinearSystemSolver.KholetskyMethod(matrix, result3);
+
+Console.WriteLine();
