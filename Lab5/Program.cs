@@ -14,34 +14,12 @@ var matrix = new double[,]
     {-1, 2, -3, 3+m, -44-k}
 };
 
-var result3 = new double[]
+var result = new double[]
 {
     1, 2, 3, 4, 5
 };
 
-var matrix2 = new double[,]
-{
-    {-4, 1, 1},
-    {1, -9, 3},
-    {1, 2, -16}
-};
-
-var result = new double[]
-{
-    2, 5, 13
-};
-
-var matrix3 = new double[,]
-{
-    {3, -2},
-    {5, 1}
-};
-
-var result1 = new double[]
-{
-    -6, 3
-};
-var x = LinearSystemSolver.SeidelMethod(matrix, result3);
-var y = LinearSystemSolver.KholetskyMethod(matrix, result3);
+var x = LinearSystemSolver.SeidelMethod(matrix, result);
+var y = LinearSystemSolver.KholetskyMethod(matrix, result);
 
 Console.WriteLine();

@@ -1,34 +1,53 @@
 ﻿namespace Lab5;
 
-public class LinearSystemSolver
+public static class LinearSystemSolver
 {
-    private static double eps => Math.Pow(10, -4);
-    // @TODO: refactor, add summary
+    /// <summary>
+    /// Погрешность, допускаемая в итеративном методе
+    /// </summary>
+    private static double Tolerance => Math.Pow(10, -4);
+
+    /// <summary>
+    /// Матрица
+    /// </summary>
+    private static double[,] _matrix;
+    
+    /// <summary>
+    /// Количество столбцов и строк в матрице
+    /// </summary>
+    private static int n => _matrix.GetLength(0);
+ 
+    /// <summary>
+    /// Решение СЛАУ методом Холецкого
+    /// </summary>
+    /// <param name="matrix">Матрица чисел</param>
+    /// <param name="resultVector">Вектор-столбец - результат умножения матрицы на (x1, x2, ...)</param>
+    /// <returns>Вектор-столбец значений x1, x2, ..</returns>
     public static double[] KholetskyMethod(double[,] matrix, double[] resultVector)
     {
-        var rows = matrix.GetLength(0);
-        var columns = matrix.GetLength(1);
-        var pMatrix = new double[rows, columns];
-        var cMatrix = new double[rows, columns];
-        for (int i = 0; i < rows; i++)
+        _matrix = matrix;
+        var pMatrix = new double[n, n];
+        var cMatrix = new double[n, n];
+        for (int i = 0; i < n; i++)
         {
             pMatrix[i, 0] = matrix[i, 0];
         }
 
-        for (int i = 0; i < columns; i++)
+        for (int i = 0; i < n; i++)
         {
             cMatrix[0, i] = matrix[0, i] / pMatrix[0, 0];
         }
 
-        for (int i = 0; i < columns; i++)
+        for (int i = 1; i < n; i++)
         {
-            CalculateColumn(matrix, pMatrix, cMatrix, i);
-            CalculateRow(matrix, pMatrix, cMatrix, i);   
+            CalculateColumn(pMatrix, cMatrix, i);
+            CalculateRow(pMatrix, cMatrix, i);   
         }
 
-        var yMatrix = new double[rows];
+        var yMatrix = new double[n];
         yMatrix[0] = resultVector[0] / pMatrix[0, 0];
-        for (int i = 1; i < rows; i++)
+        
+        for (int i = 1; i < n; i++)
         {
             var b = resultVector[i];
             var sum = 0d;
@@ -40,12 +59,13 @@ public class LinearSystemSolver
             yMatrix[i] = (b - sum) / pMatrix[i, i];
         }
 
-        var result = new double[rows];
-        result[rows - 1] = yMatrix[rows - 1];
-        for (int i = rows - 2; i >= 0; i--)
+        var result = new double[n];
+        
+        result[n - 1] = yMatrix[n - 1];
+        for (int i = n - 2; i >= 0; i--)
         {
             var sum = 0d;
-            for (int k = i; k < rows; k++)
+            for (int k = i; k < n; k++)
             {
                 sum += cMatrix[i, k] * result[k];
             }
@@ -55,12 +75,18 @@ public class LinearSystemSolver
 
         return result;
     }
-
-    private static void CalculateColumn(double[,] matrix, double[,] pMatrix, double[,] cMatrix, int column)
+    
+    /// <summary>
+    /// Вспомогательный метод, вычисляющий столбец треугольной матрицы P. Где P - представление матрицы A = PC
+    /// </summary>
+    /// <param name="pMatrix">Матрица P</param>
+    /// <param name="cMatrix">Матрица C</param>
+    /// <param name="column">Номер столбца</param>
+    private static void CalculateColumn( double[,] pMatrix, double[,] cMatrix, int column)
     {
-        for (int i = column; i < matrix.GetLength(0); i++)
+        for (int i = column; i < n; i++)
         {
-            var a = matrix[i, column];
+            var a = _matrix[i, column];
             var sum = 0d;
             for (int k = 0; k < i; k++)
             {
@@ -71,11 +97,17 @@ public class LinearSystemSolver
         }
     }
 
-    private static void CalculateRow(double[,] matrix, double[,] pMatrix, double[,] cMatrix, int row)
+    /// <summary>
+    /// Вспомогательный метод, вычисляющий строку треугольной матрицы C. Где C - представление матрицы A = PC
+    /// </summary>
+    /// <param name="pMatrix">Матрица P</param>
+    /// <param name="cMatrix">Матрица C</param>
+    /// <param name="row">Номер строки</param>
+    private static void CalculateRow(double[,] pMatrix, double[,] cMatrix, int row)
     {
-        for (int i = row; i < matrix.GetLength(0); i++)
+        for (int i = row; i < n; i++)
         {
-            var a = matrix[row, i];
+            var a = _matrix[row, i];
             var sum = 0d;
             for (int j = 0; j < i; j++)
             {
@@ -86,11 +118,16 @@ public class LinearSystemSolver
         }
     }
 
+    /// <summary>
+    /// Решение СЛАУ методом Зейделя.
+    /// </summary>
+    /// <param name="matrix">Матрица с диагональным преобладанием</param>
+    /// <param name="resultVector">Вектор-столбец - результат умножения матрицы на (x1, x2, ...)</param>
+    /// <returns>Вектор-столбец значений x1, x2, ..</returns>
     public static double[] SeidelMethod(double[,] matrix, double[] resultVector)
     {
-        
+        _matrix = matrix;
         double[,] a = new double[matrix.GetLength(0), matrix.GetLength(1) + 1];
-        var resultMatrix = new double[resultVector.GetLength(0)];
         for (var i = 0; i < a.GetLength(0); i++)
         for (var j = 0; j < a.GetLength(1) - 1; j++)
             a[i, j] = matrix[i, j];
@@ -100,19 +137,16 @@ public class LinearSystemSolver
         
         var previousValues = new double[matrix.GetLength(0)];
         for (var i = 0; i < previousValues.GetLength(0); i++) previousValues[i] = 0.0;
+        var approximationStep = 0; // номер приближения / итерации
         while (true)
         {
-            // Введем массив значений неизвестных на текущей итерации
+            approximationStep++;
             var currentValues = new double[a.GetLength(0)];
 
-            // Посчитаем значения неизвестных на текущей итерации
             for (var i = 0; i < matrix.GetLength(0); i++)
             {
-                // Инициализируем i-ую неизвестную значением
-                // свободного члена i-ой строки матрицы
                 currentValues[i] = a[i, a.GetLength(0)];
 
-                // Вычитаем сумму по всем отличным от i-ой неизвестным
                 for (var j = 0; j < a.GetLength(0); j++)
                 {
                     if (j < i) currentValues[i] -= a[i, j] * currentValues[j];
@@ -120,24 +154,18 @@ public class LinearSystemSolver
                 }
                 currentValues[i] /= a[i, i];
             }
-            var differency = 0.0;
+            var difference = 0.0;
 
             for (var i = 0; i < a.GetLength(0); i++)
-                differency += Math.Abs(currentValues[i] - previousValues[i]);
-
-            // Если необходимая точность достигнута, то завершаем процесс
-            if (differency < eps)
+                difference += Math.Abs(currentValues[i] - previousValues[i]);
+            
+            if (difference < Tolerance)
                 break;
-
-            // Переходим к следующей итерации, так
-            // что текущие значения неизвестных
-            // становятся значениями на предыдущей итерации
-
+            
             previousValues = currentValues;
         }
-
-        // результат присваиваем матрице результатов.
-        resultMatrix = previousValues;
+        
+        var resultMatrix = previousValues;
         return resultMatrix;
     }
 }
